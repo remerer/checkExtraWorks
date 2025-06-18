@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>추가근무 체크 및 교통비 입력</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" >
+  <style>
+
+    /* 토스트 컨테이너를 화면 상단 중앙에 고정 */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1050;
+    }
+    /* 슬라이드 다운 애니메이션 */
+    .toast {
+      animation: slideDown 0.5s ease-out;
+    }
+    @keyframes slideDown {
+      from { transform: translateY(-100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    //토스트 컨테이너 테스트
+    
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    
+    .title-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center; /* 중앙 정렬 (필요한 경우) */
+      text-align: center;
+      margin-bottom: 2rem;
+      gap: 1rem; /* 원하는 간격 값으로 조정 */
+    }
+    .name-container {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    
+    .day-cards {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    .day-card {
+      width: 200px;
+      transition: background-color 0.3s ease;
+      cursor: pointer;
+    }
+    
+    .day-card.checked {
+      background-color: #d4edda;
+      border-color: #c3e6cb;
+    }
+    
+    .submit-container {
+      margin-top: 2rem;
+      text-align: center;
+    }
+
+    .custom-checkbox {
+      scale: 2.5;
+      margin-left: auto;
+    }
+    
+    #overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 10;
+      background: transparent;
+      cursor: pointer;
+      display: block;
+    }
+
+    #loading-icon {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 20;
+      background: rgba(255, 255, 255, 0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #loading-icon .spinner {
+      border: 8px solid #f3f3f3;
+      border-top: 8px solid #3498db;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      animation: spin 2s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* 숫자 스피너 제거 */
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+
+    .error-container {
+      min-height: 30px;
+      margin-bottom: 1rem;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .input-group .form-control,
+    .input-group .btn {
+      height: 40px;
+      line-height: 1.5;
+    }
+
+    @media (max-aspect-ratio: 16/12) {
+      body {
+        padding: 0;
+        margin: 0;
+      }
+
+      /* 메인 제목 */
+      h1 {
+        font-weight: 700;
+        font-size: 3rem;
+      }
+
+      /* 요일 제목 */
+      h2 {
+        font-weight: 600;
+        font-size: 2.5rem;
+      }
+
+      /* 카드 레이아웃 */
+      .day-cards {
+        flex-direction: column;
+        gap: 0.2rem;
+      }
+      /* 단일카드 레이아웃 */
+      .day-card {
+        flex-direction: row;
+        width: 100%;
+        max-width: none;
+        margin-bottom: 0.5rem;
+      }
+      
+      /* 카드 헤더 부분(음영부분) */
+      .card-header {
+        width: 75%;
+        justify-content: space-between;
+      }
+
+      /* 체크박스 크기 조정 */
+      .custom-checkbox {
+        scale: 2.5;
+        margin: 0.2rem 0.2rem 0.2rem 1rem;
+      }
+
+      /* 폼 요소 크기 조정 */
+      .text-center {
+        height: 5rem;
+        padding : 0.6rem;
+      } 
+
+      /* 폼 요소 크기 조정 */
+      .form-control {
+        height: 8rem;
+        font-size: 2rem;
+        padding: 0.5rem 1rem;
+      } 
+      .transport-cost {
+        height: 4rem;
+        font-size: 2rem;
+        padding: 0.5rem 0.5rem;
+      }
+
+      .input-group .form-control, 
+      .input-group .btn {
+        height: 4rem;
+        font-size: 2rem;
+      }
+
+      /* 저장 버튼 */
+      .btn-success {
+        font-size: 2rem;
+        margin-top: 2rem;
+      }
+
+      /* 이름 입력 영역 */
+      .name-container {
+        margin-bottom: 2rem;
+        width: 100%;
+      }
+
+      .input-group {
+        width: 100%;
+      }
+
+      /* 에러 메시지 */
+      .error-container {
+        min-height: 40px;
+        font-size: 1.5rem;
+      }
+
+      /* 너비 조정으로 2열 배치 유지 */
+      .container {
+        width: 100%;
+        padding: 0 0.5rem;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <div class="toast-container">
+    <!-- 토스트 컴포넌트 -->
+    <div id="customToast" class="toast align-items-center text-bg-primary border-0" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body">
+          <!-- 전달된 메시지가 출력됩니다 -->
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="닫기"></button>
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="title-container">
+      <h1>내사무실 초과근무 입력</h1>
+      <h3>기간 : <?= mondayDate ?> ~ <?= sundayDate ?></h3>
+    </div>
+    
+    <form id="nameForm" onsubmit="return false;">
+      <div class="name-container">
+        <div class="input-group">
+          <input type="text" class="form-control" id="name" placeholder="이름을 입력하세요" autocomplete='on' required>
+          <div class="input-group-append">
+            <button type="submit" class="btn btn-primary" id="loadDataBtn">불러오기</button>
+          </div>
+        </div>
+      </div>
+      <div class="error-container">
+        <span id="name-error" style="color: red; display: none;">이름은 3글자의 한글만 입력 가능합니다.</span>
+      </div>
+    </form>
+
+    <form id="overtimeForm" style="position: relative;">
+      <fieldset id="formFields" disabled>
+        <div class="day-cards">
+          <!-- 요일 카드 템플릿 - JS로 생성됨 -->
+        </div>
+
+        <div class="submit-container">
+          <button type="button" class="btn btn-success btn-lg submit-btn">저장하기</button>
+        </div>
+      </fieldset>
+      <div id="overlay"></div>
+      <div id="loading-icon">
+        <div class="spinner"></div>
+      </div>
+    </form>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    function addDays(dateStr, days) {
+      var d = new Date(dateStr);
+      d.setDate(d.getDate() + days);
+      var month = d.getMonth() + 1;
+      var day = d.getDate();
+      return month + "/" + day;
+    }
+
+    // 요일 데이터
+    const days = [
+      { id: 'monday', name: '월' },
+      { id: 'tuesday', name: '화' },
+      { id: 'wednesday', name: '수' },
+      { id: 'thursday', name: '목' },
+      { id: 'friday', name: '금' },
+      { id: 'saturday', name: '토' },
+      { id: 'sunday', name: '일' }
+    ];
+
+    // 전역 변수에 전체 데이터를 저장 (예: { "홍길동": { mon: { overtime: true, transportCost: "1000" } } })
+    let preloadedWeeklyData = {};
+    // preload 완료 여부 플래그
+    let preloadFinished = false;
+    
+    // preload 완료 시 resolve할 프로미스 생성
+    const preloadPromise = new Promise((resolve, reject) => {
+      // 로딩창은 여기서 보이지 않음 (사용자에게는 인지되지 않음)
+      google.script.run
+        .withSuccessHandler(function(response) {
+          preloadedWeeklyData = response;
+          preloadFinished = true;
+          resolve();
+        })
+        .withFailureHandler(function(error) {
+          preloadFinished = true;
+          console.error("Preload 실패:", error);
+          resolve(); // 에러 발생 시에도 resolve하여 후속 처리가 가능하도록 함
+        })
+        .getAllWeeklyData(); // 서버 측에서 모든 데이터를 반환하도록 구현
+    });
+
+
+    // 요일 카드 생성
+    function createDayCards() {
+      const dayCardsContainer = document.querySelector('.day-cards');
+      dayCardsContainer.innerHTML = '';
+      
+      days.forEach((day, index) => {
+        const card = document.createElement('div');
+        card.className = 'card day-card';
+        card.id = `${day.id}-card`;
+        card.innerHTML = `
+          <div class="card-header text-center">
+            <div style="display: flex; align-items: center;">
+              <div class="custom-control custom-checkbox">
+                <input type="checkbox" class="custom-control-input overtime-check" id="${day.id}-overtime">
+                <label class="custom-control-label" for="${day.id}-overtime"></label>
+                </div>
+              <h2 class="mb-0" style="user-select: none;">${day.name}</h2>
+            </div>
+            <h3 class="mb-0" style="user-select: none;">${ addDays(<?= mondayDate ?>, index) }</h3>
+          </div>
+          <div class="card-body text-center">
+            <div class="form-group">
+              <input type="number" class="form-control transport-cost" id="${day.id}-cost" placeholder="교통비 입력" autocomplete='off' disabled>
+            </div>
+          </div>
+        `;
+        dayCardsContainer.appendChild(card);
+        
+        // 카드 클릭 이벤트 추가
+        card.addEventListener('click', function(e) {
+          // 교통비 입력 필드 클릭은 제외
+          if (e.target.id !== `${day.id}-cost` && e.target.id !== `${day.id}-overtime` && !e.target.closest('.transport-cost')) {
+            const checkbox = document.getElementById(`${day.id}-overtime`);
+            checkbox.checked = !checkbox.checked;
+            
+            // 체크박스 변경 이벤트 수동 트리거
+            const event = new Event('change');
+            checkbox.dispatchEvent(event);
+          }
+        });
+      });
+
+      // 체크박스 이벤트 리스너 추가
+      document.querySelectorAll('.overtime-check').forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+          const day = this.id.split('-')[0];
+          const card = document.getElementById(day + '-card');
+          const costInput = document.getElementById(day + '-cost');
+          
+          if (this.checked) {
+            card.classList.add('checked');
+            costInput.disabled = false;
+          } else {
+            card.classList.remove('checked');
+            costInput.disabled = true;
+            costInput.value = '';
+          }
+        });
+      });
+    }
+
+    // 로딩 아이콘 표시/숨김
+    function showLoadingIcon() {
+      document.getElementById('loading-icon').style.display = 'flex';
+    }
+
+    function hideLoadingIcon() {
+      document.getElementById('loading-icon').style.display = 'none';
+    }
+
+    // 이름 검증
+    function validateName(name) {
+      const nameRegex = /^[가-힣]{3}$/;
+      if (name.trim() === '') {
+        showToast("이름을 입력하세요.");
+        return false;
+      } else if (!nameRegex.test(name)) {
+        document.getElementById('name-error').style.display = 'inline';
+        return false;
+      } else {
+        document.getElementById('name-error').style.display = 'none';
+        return true;
+      }
+    }
+
+    // 데이터 로드
+    function processData(name) {
+
+      const response = preloadedWeeklyData[name];
+      if (response) {
+        // 기존 데이터 로드
+        days.forEach(day => {
+          const checkbox = document.getElementById(`${day.id}-overtime`);
+          const costInput = document.getElementById(`${day.id}-cost`);
+          const card = document.getElementById(`${day.id}-card`);
+          
+          checkbox.checked = response[day.id].overtime;
+          
+          if (checkbox.checked) {
+            card.classList.add('checked');
+            costInput.disabled = false;
+            costInput.value = (Number(response[day.id].transportCost) <= 0) ? "" : response[day.id].transportCost;
+          } else {
+            card.classList.remove('checked');
+            costInput.disabled = true;
+            costInput.value = '';
+          }
+        });
+        showToast("데이터를 로드했습니다.");
+      } else {
+        // 새 데이터 초기화
+        days.forEach(day => {
+          const checkbox = document.getElementById(`${day.id}-overtime`);
+          const costInput = document.getElementById(`${day.id}-cost`);
+          const card = document.getElementById(`${day.id}-card`);
+          
+          checkbox.checked = false;
+          card.classList.remove('checked');
+          costInput.disabled = true;
+          costInput.value = '';
+        });
+        alert("해당 이름에 대한 데이터가 없습니다. 새로 저장합니다.");
+      }
+      
+      // 폼 활성화 및 이름창 비활성화
+      document.getElementById('name').setAttribute("readonly", "true");
+      document.getElementById('formFields').disabled = false;
+      document.getElementById('overlay').style.display = 'none';
+      document.getElementById('loadDataBtn').disabled = true;
+    }
+
+    // 사용자가 loadData()를 호출하면, preload 상태에 따라 로딩창을 처리
+    function loadData(name) {
+      if (!preloadFinished) {
+        // preload가 완료되지 않은 경우에만 로딩창 표시
+        showLoadingIcon();
+        preloadPromise.then(() => {
+          hideLoadingIcon();
+          processData(name);
+        });
+      } else {
+        // preload가 이미 완료되었다면 바로 데이터 처리
+        processData(name);
+      }
+    }
+
+    // 데이터 저장
+    function saveData(name) {
+      if (!validateName(name)) return;
+      
+      showLoadingIcon();
+
+      // 요일별 데이터 수집
+      const weeklyData = days.map(day => ({
+        overtime: document.getElementById(`${day.id}-overtime`).checked,
+        transportCost: parseInt(document.getElementById(`${day.id}-cost`).value) || null
+      }));
+
+      // Google Apps Script 함수 호출
+      google.script.run
+        .withSuccessHandler(function(response) {
+          hideLoadingIcon();
+          alert(response);
+        })
+        .withFailureHandler(function(error) {
+          hideLoadingIcon();
+          alert("저장 실패 : 다시 저장해주세요.\nErrorCode : " + error);
+        })
+        .saveWeeklyData(name, weeklyData);
+    }
+
+    // alert()과 같이 문자열을 전달받아 토스트를 보여주는 함수 
+    function showToast(message) {
+      var toastEl = document.getElementById('customToast');
+      // 토스트 메시지 설정
+      toastEl.querySelector('.toast-body').textContent = message;
+      var toast = new bootstrap.Toast(toastEl, { delay: 3000 }); // 3000ms 후 자동으로 닫힘
+      toast.show();
+    }
+
+
+    // 이벤트 리스너 등록
+    document.addEventListener('DOMContentLoaded', function() {
+      createDayCards();
+      
+      // 오버레이 클릭 이벤트
+      document.getElementById('overlay').addEventListener('click', function() {
+        if (document.getElementById('formFields').disabled) {
+          showToast("이름을 먼저 입력하세요.");
+        }
+      });
+
+      // 데이터 로드 버튼 클릭 이벤트
+      document.getElementById('loadDataBtn').addEventListener('click', function() {
+        const name = document.getElementById('name').value;
+        if (validateName(name)) {
+          loadData(name);
+        }
+      });
+
+      // 저장 버튼 클릭 이벤트
+      document.querySelector('.submit-btn').addEventListener('click', function() {
+        const name = document.getElementById('name').value;
+        saveData(name);
+      });
+    });
+  </script>
+</body>
+</html>
